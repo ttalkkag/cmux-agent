@@ -1,0 +1,175 @@
+# DEFAULT
+
+# @todo
+
+# Distribution / packaging
+.Python
+__pycache__/
+*.py[cod]
+*$py.class
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+jspm_packages/
+node_modules/
+vendor/
+
+*.class
+*.jar
+*.war
+*.ear
+target/
+hs_err_pid*
+
+# env
+.env
+.env.bak
+.env.backup
+.env.local
+.env.local.*
+.env.production
+.env.production.*
+ENV/
+venv/
+venv.bak/
+.venv/
+
+# Cloud
+.serverless/
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+.terragrunt-cache/
+.pulumi/
+.aws/
+.azure/
+.gcloud/
+
+# Database
+*.db
+*.sql
+*.bak
+*.sqlite
+
+# Docker
+Dockerfile.local
+docker-compose.override.yml
+docker-compose.local.yml
+.docker/
+
+# Cache
+/temp/
+/tmp/
+*.cache
+*.tmp
+*.swp
+*.swo
+
+# Log
+*.log
+*.log.*
+
+# Key
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx
+secrets/
+.secrets
+.secrets/
+auth.json
+credentials.json
+
+# IDE
+.idea/
+.idea_modules/
+.vscode/
+.history/
+*.code-workspace
+.fleet/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-project
+*.sublime-workspace
+*.iml
+*.iws
+*.ipr
+out/
+
+# OS
+.AppleDouble
+.DS_Store*
+.LSOverride
+.Spotlight-V100
+.Trashes
+._*
+
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Icon?
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# AI Agent
+.agents/*
+.augment/*
+.amazonq/*
+.codebuddy/*
+.cursor/*
+.gemini/*
+.kilocode/*
+.opencode/*
+.qwen/*
+.roo/*
+.windsurf/*
+
+# Claude
+.claude/commands/speckit.*
+.claude/hooks/.permissions-checked
+.claude/memory/*
+!.claude/memory/.gitkeep
+.claude/plans
+.claude/settings.local.json
+
+# Codex
+.codex/commands/speckit.*
+.codex/memory/*
+!.codex/memory/.gitkeep
+
+# GitHub
+.github/agents/*
+!.github/agents/*.agent.md
+.github/prompts/*
+
+# Agent-OS
+.agent-os/
+agent-os/
+
+# Spec-Kit
+.specify/
+.speckit/
+specs/

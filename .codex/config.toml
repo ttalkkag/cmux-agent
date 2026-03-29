@@ -1,0 +1,27 @@
+# Project-local Codex CLI settings.
+# This file is merged with ~/.codex/config.toml and overrides global defaults.
+
+model = "gpt-5.4"
+model_reasoning_effort = "xhigh"
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+
+[features]
+collaboration_modes = true
+
+# MCP servers (project-local)
+# References:
+# - https://developers.openai.com/codex/mcp
+# - https://developers.openai.com/mcp/
+
+[mcp_servers.openai_developer_docs]
+command = "npx"
+args = ["-y", "mcp-remote", "https://developers.openai.com/mcp"]
+enabled = true
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp@latest"]
+enabled = true

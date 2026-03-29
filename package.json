@@ -1,0 +1,12 @@
+{
+  "name": "base",
+  "version": "1.0.0",
+  "description": "Base project template with automated Git hooks and commit validation",
+  "author": "kimchanhyung98",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}
