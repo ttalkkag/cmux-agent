@@ -181,6 +181,10 @@ def cmd_start(args: argparse.Namespace) -> None:
             cmux.rename_tab(name, surface_id=surface_id, workspace_id=ws_ref)
         agents.append(agent)
 
+    # 프로토콜 파일 생성
+    prompt_builder = PromptBuilder(str(fs.outbox), str(fs.inbox))
+    prompt_builder.write_protocol_files(fs.base, agents)
+
     # run 상태 → RUNNING
     run.transition_to(RunStatus.RUNNING)
     store.save_run(run)
@@ -189,12 +193,22 @@ def cmd_start(args: argparse.Namespace) -> None:
     # controller 탭에서 watch 자동 실행
     controller = agents[0]
     if controller.surface_id:
-        cmux.focus_surface(controller.surface_id)
         cmux.send_text(
             "cmux-agent watch\n",
             surface_id=controller.surface_id,
             workspace_id=ws_ref,
         )
+
+    # orchestrator, worker 탭에서 AI CLI 자동 실행
+    time.sleep(0.5)
+    for agent in agents:
+        if agent.role in (AgentRole.ORCHESTRATOR, AgentRole.WORKER) and agent.surface_id:
+            cmux.send_text(
+                "claude\n",
+                surface_id=agent.surface_id,
+                workspace_id=ws_ref,
+            )
+            time.sleep(0.3)
 
     cmux.notify(title="cmux-agent", body=f"Run 시작: {run.run_id[:8]}")
     cmux.log(f"run started: {run.run_id[:8]}", level="success", source="cmux-agent")
@@ -203,6 +217,49 @@ def cmd_start(args: argparse.Namespace) -> None:
     for a in agents:
         print(f"  {a.name:<16} {a.surface_id or '-'}")
     print(f"Workspace: {ws_ref}")
+    print(f"\n'cmux-agent task \"요청\"' 으로 작업을 시작하세요.")
+
+
+# ---------------------------------------------------------------------------
+# task
+# ---------------------------------------------------------------------------
+
+def cmd_task(args: argparse.Namespace) -> None:
+    fs = _get_fs()
+    store = _get_store(fs)
+    cmux = CmuxAdapter()
+
+    run = store.get_active_run()
+    if not run:
+        print("활성 run이 없습니다. 'cmux-agent' 로 시작하세요.", file=sys.stderr)
+        sys.exit(1)
+
+    orch = store.get_agent_by_name(run.run_id, "orchestrator")
+    if not orch or not orch.surface_id:
+        print("orchestrator가 등록되지 않았거나 surface_id가 없습니다.", file=sys.stderr)
+        sys.exit(1)
+
+    request = args.request
+
+    prompt = (
+        f"{request}\n"
+        f"\n"
+        f"위 작업을 분석하고, worker에게 위임하세요.\n"
+        f"{fs.outbox} 에 dispatch artifact(JSON)를 생성하세요.\n"
+        f"사용 가능한 worker: "
+    )
+    workers = store.get_agents(run.run_id)
+    worker_names = [a.name for a in workers if a.role == AgentRole.WORKER]
+    prompt += ", ".join(worker_names)
+
+    cmux.send_text(
+        prompt + "\n",
+        surface_id=orch.surface_id,
+        workspace_id=run.workspace_id,
+    )
+
+    cmux.log(f"task → orchestrator: {request[:50]}", level="info", source="cmux-agent")
+    print(f"작업 주입 완료: orchestrator ({orch.surface_id})")
 
 
 # ---------------------------------------------------------------------------
@@ -309,6 +366,7 @@ def cmd_watch(args: argparse.Namespace) -> None:
         cmux=cmux,
         prompt_builder=prompt_builder,
         run_id=run.run_id,
+        workspace_id=run.workspace_id,
     )
     watcher = ArtifactWatcher(fs.outbox, broker)
 

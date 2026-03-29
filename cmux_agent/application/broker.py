@@ -35,6 +35,7 @@ class MessageBroker:
         cmux: CmuxAdapter,
         prompt_builder: PromptBuilder,
         run_id: str,
+        workspace_id: str | None = None,
     ) -> None:
         self._store = store
         self._event_log = event_log
@@ -42,6 +43,7 @@ class MessageBroker:
         self._cmux = cmux
         self._prompt = prompt_builder
         self._run_id = run_id
+        self._workspace_id = workspace_id
 
     # -- ArtifactConsumer 프로토콜 구현 ------------------------------------
 
@@ -140,7 +142,7 @@ class MessageBroker:
             self._event_log.append(
                 message_delivered(self._run_id, msg.message_id, recipient)
             )
-            self._notify_recipient(recipient, sender, msg_type)
+            self._inject_and_notify(recipient, sender, msg_type, payload)
         else:
             msg.mark_failed()
             self._store.save_message(msg)
@@ -154,10 +156,14 @@ class MessageBroker:
         except OSError:
             logger.warning("artifact 이동 실패: %s", artifact_path)
 
-    def _notify_recipient(
-        self, recipient: str, sender: str, msg_type: MessageType,
+    def _inject_and_notify(
+        self,
+        recipient: str,
+        sender: str,
+        msg_type: MessageType,
+        payload: dict,
     ) -> None:
-        """cmux를 통해 수신자에게 메시지 도착을 통보한다."""
+        """AI CLI 터미널에 메시지를 자동 주입하고 cmux 알림을 보낸다."""
         agent = self._store.get_agent_by_name(self._run_id, recipient)
         if not agent:
             return
@@ -165,13 +171,20 @@ class MessageBroker:
         label = "작업 위임" if msg_type == MessageType.DISPATCH else "결과 반환"
         summary = f"[{sender}] → [{recipient}] {label}"
 
-        self._cmux.notify(title="cmux-agent", body=summary)
-
+        # AI CLI 터미널에 주입 프롬프트 전달
         if agent.surface_id:
+            injection = self._prompt.build_injection_prompt(
+                sender=sender,
+                recipient=recipient,
+                msg_type=msg_type,
+                payload=payload,
+            )
+            self._cmux.send_text(
+                injection + "\n",
+                surface_id=agent.surface_id,
+                workspace_id=self._workspace_id,
+            )
             self._cmux.trigger_flash(surface_id=agent.surface_id)
 
-        self._cmux.log(
-            summary,
-            level="info",
-            source="cmux-agent",
-        )
+        self._cmux.notify(title="cmux-agent", body=summary)
+        self._cmux.log(summary, level="info", source="cmux-agent")

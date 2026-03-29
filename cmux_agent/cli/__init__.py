@@ -15,6 +15,7 @@ from cmux_agent.cli.commands import (
     cmd_start,
     cmd_status,
     cmd_stop,
+    cmd_task,
     cmd_watch,
 )
 
@@ -32,6 +33,10 @@ def _build_parser() -> argparse.ArgumentParser:
     # start
     p_start = sub.add_parser("start", help="새 run 시작")
     p_start.add_argument("--cwd", default=".", help="작업 디렉토리")
+
+    # task
+    p_task = sub.add_parser("task", help="orchestrator에 작업 주입")
+    p_task.add_argument("request", help="작업 요청 내용")
 
     # stop
     p_stop = sub.add_parser("stop", help="run 종료")
@@ -88,6 +93,7 @@ def main(argv: list[str] | None = None) -> None:
     commands = {
         "doctor": cmd_doctor,
         "start": cmd_start,
+        "task": cmd_task,
         "stop": cmd_stop,
         "register": cmd_register,
         "agents": cmd_agents,
