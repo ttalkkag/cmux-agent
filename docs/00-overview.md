@@ -227,19 +227,23 @@ flowchart TD
     VALIDATE{"유효성 검증"}
     PARSE["Broker: artifact 파싱<br/>type · sender · recipient 추출"]
     ROUTE{"수신자<br/>등록 확인"}
+    ALIVE{"수신자 탭<br/>생존 확인"}
     DELIVER["inbox/{recipient}/ 에<br/>메시지 파일 생성"]
-    NOTIFY["cmux 알림 + 자동 주입<br/>notify · send_text"]
+    INJECT["AI CLI 터미널에<br/>send_text + send_key 자동 주입"]
+    NOTIFY["cmux 알림<br/>notify · trigger_flash"]
     RECORD["StateStore 기록<br/>Message DELIVERED"]
-    EVENT["이벤트 로그<br/>JSONL 기록"]
     MOVE["outbox → processed/<br/>파일 이동"]
     FAIL_V["processed/failed/ 이동<br/>검증 실패 로그"]
     FAIL_R["FAILED 상태 기록<br/>미등록 agent 로그"]
+    FAIL_D["FAILED 상태 기록<br/>비활성 탭 로그"]
 
     START --> DETECT --> VALIDATE
     VALIDATE -->|성공| PARSE --> ROUTE
     VALIDATE -->|실패| FAIL_V
-    ROUTE -->|등록됨| DELIVER --> NOTIFY --> RECORD --> EVENT --> MOVE
+    ROUTE -->|등록됨| ALIVE
     ROUTE -->|미등록| FAIL_R
+    ALIVE -->|활성| DELIVER --> INJECT --> NOTIFY --> RECORD --> MOVE
+    ALIVE -->|비활성| FAIL_D
 ```
 
 ## CLI 명령 구조
@@ -280,6 +284,8 @@ graph TD
     ROOT[".agent/"]
     DB["control-plane.sqlite3<br/>정규화된 현재 상태"]
     EV["events.jsonl<br/>append-only 이벤트"]
+    PROTO_O["ORCHESTRATOR.md<br/>orchestrator 프로토콜"]
+    PROTO_W["WORKER-N.md<br/>worker 프로토콜"]
     OB["outbox/<br/>AI CLI → artifact 쓰기"]
     IB["inbox/"]
     IB_O["orchestrator/<br/>orchestrator 수신함"]
@@ -291,6 +297,8 @@ graph TD
 
     ROOT --> DB
     ROOT --> EV
+    ROOT --> PROTO_O
+    ROOT --> PROTO_W
     ROOT --> OB
     ROOT --> IB
     ROOT --> PROC

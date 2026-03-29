@@ -62,9 +62,10 @@ cmux-agent messages [run_id]               # 메시지 이력 조회
 
 시스템 요구사항을 검증한다.
 
-- cmux 설치 여부
-- Python 버전 (3.9+)
-- .agent 디렉토리 쓰기 권한
+- cmux 설치 및 실행 여부 (ping)
+- cmux CLI 바이너리 경로
+- Python 버전
+- AI CLI 설치 여부 (claude, codex, gemini)
 
 ### `(기본 명령 — start)`
 
@@ -72,20 +73,24 @@ cmux-agent messages [run_id]               # 메시지 이력 조회
 
 1. run_id 생성
 2. `.agent/` 디렉토리 초기화 (outbox, inbox, processed)
-3. 프로토콜 파일 생성 (역할, artifact 형식, 경로 안내)
-4. SQLite 초기화, Run 레코드 생성
-5. cmux workspace 생성 (controller, orchestrator, worker-1, worker-2 탭)
-6. 각 탭에 AI CLI 자동 실행 via `cmux send`
-7. controller 탭에서 watcher 자동 실행
+3. SQLite 초기화, Run 레코드 생성
+4. cmux workspace 생성 (첫 번째 탭 = controller)
+5. `cmux-agent.json` 설정 파일에서 agent 구성 로드
+6. orchestrator, worker-N 탭을 `new-surface`로 동적 생성
+7. agent 등록 + inbox 디렉토리 생성 + 탭 이름 설정
+8. 프로토콜 파일 생성 (ORCHESTRATOR.md, WORKER-N.md)
+9. controller 탭에서 `cmux-agent watch` 자동 실행
+10. orchestrator, worker 탭에서 설정된 AI CLI 자동 실행
 
 ### `task`
 
 orchestrator AI CLI 터미널에 작업을 자동 주입한다.
 
 1. 활성 run의 orchestrator surface_id 확인
-2. `cmux send`로 orchestrator 터미널에 요청 내용 주입
-3. orchestrator AI CLI가 수신 → 분석 → dispatch artifact 생성
-4. 이후 자율 순환 시작
+2. 활성 worker 목록 확인 (닫힌 탭 제외)
+3. `cmux send` + `send_key enter`로 orchestrator 터미널에 요청 주입
+4. orchestrator AI CLI가 수신 → 분석 → dispatch artifact 생성
+5. 이후 자율 순환 시작
 
 ### `register`
 
@@ -149,10 +154,27 @@ run_id를 명시하지 않으면 가장 최근 활성 run을 자동으로 사용
 11. run_id 자동 감지
 12. 단위 테스트
 
+## 설정 파일 (`cmux-agent.json`)
+
+프로젝트 루트에 설정 파일을 두면 agent별 AI CLI를 개별 지정할 수 있다.
+파일이 없으면 기본값(`orchestrator: claude`, `worker-1: claude`)을 사용한다.
+
+```json
+{
+  "orchestrator": "claude",
+  "worker-1": "claude",
+  "worker-2": "codex",
+  "worker-3": "gemini"
+}
+```
+
+worker 수는 `worker-N` 키 개수에 따라 동적으로 결정된다.
+
 ## 설계 참고
 
 - argparse 사용 (외부 의존성 최소화)
 - `cmux-agent` (인자 없음) = start: workspace + AI CLI + watcher 자동 시작
 - `cmux-agent task` = orchestrator에 작업 주입 → 자율 순환 시작
-- AI CLI는 `cmux send`로 자동 실행 — 사용자가 직접 실행하지 않아도 됨
+- `cmux send` + `send_key enter`로 AI CLI에 텍스트 전달 + 실행
+- 닫힌 탭의 worker는 task 명령에서 자동 제외
 - 에러 시 종료 코드 1, 명확한 에러 메시지
