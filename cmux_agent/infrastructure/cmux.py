@@ -230,3 +230,8 @@ class CmuxAdapter:
         if surface_id:
             args.extend(["--surface", surface_id])
         return self._run(*args)
+
+    def is_surface_alive(self, surface_id: str) -> bool:
+        """surface가 아직 존재하는지 확인한다."""
+        result = self._run("surface-health", "--surface", surface_id)
+        return result.ok

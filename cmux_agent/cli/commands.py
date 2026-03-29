@@ -270,7 +270,15 @@ def cmd_task(args: argparse.Namespace) -> None:
         f"사용 가능한 worker: "
     )
     workers = store.get_agents(run.run_id)
-    worker_names = [a.name for a in workers if a.role == AgentRole.WORKER]
+    worker_names = [
+        a.name for a in workers
+        if a.role == AgentRole.WORKER
+        and a.surface_id
+        and cmux.is_surface_alive(a.surface_id)
+    ]
+    if not worker_names:
+        print("활성 worker가 없습니다.", file=sys.stderr)
+        sys.exit(1)
     prompt += ", ".join(worker_names)
 
     cmux.send_text(

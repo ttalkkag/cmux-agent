@@ -79,11 +79,23 @@ class MessageBroker:
             return
 
         # recipient 확인
-        if not self._store.get_agent_by_name(self._run_id, recipient):
+        recipient_agent = self._store.get_agent_by_name(self._run_id, recipient)
+        if not recipient_agent:
             logger.warning("미등록 수신자: %s", recipient)
             self._event_log.append(
                 artifact_validation_failed(
                     self._run_id, str(artifact_path), f"미등록 recipient: {recipient}"
+                )
+            )
+            self._fs.move_to_failed(artifact_path)
+            return
+
+        # recipient surface 생존 확인
+        if recipient_agent.surface_id and not self._cmux.is_surface_alive(recipient_agent.surface_id):
+            print(f"  ✗ 비활성 수신자: {recipient} (탭 닫힘)", flush=True)
+            self._event_log.append(
+                artifact_validation_failed(
+                    self._run_id, str(artifact_path), f"비활성 recipient: {recipient}"
                 )
             )
             self._fs.move_to_failed(artifact_path)
