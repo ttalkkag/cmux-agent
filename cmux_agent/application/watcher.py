@@ -70,7 +70,7 @@ class _OutboxHandler(FileSystemEventHandler):
             self._consumer.handle_artifact(path, {"_error": error, **data})
             return
 
-        logger.info("artifact 처리: %s", path.name)
+        print(f"  → artifact 감지: {path.name}", flush=True)
         self._consumer.handle_artifact(path, data)
 
 

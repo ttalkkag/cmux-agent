@@ -365,11 +365,11 @@ def cmd_agents(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 def cmd_watch(args: argparse.Namespace) -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%H:%M:%S",
-    )
+    # watchdog 스레드에서도 즉시 출력되도록 flush 핸들러 사용
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S"))
+    logging.root.addHandler(handler)
+    logging.root.setLevel(logging.INFO)
 
     fs = _get_fs()
     store = _get_store(fs)
