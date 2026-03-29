@@ -21,6 +21,23 @@ from cmux_agent.infrastructure.filesystem import AgentFileSystem
 from cmux_agent.infrastructure.storage import StateStore
 
 AGENT_DIR = ".agent"
+CONFIG_FILE = "cmux-agent.json"
+DEFAULT_CONFIG = {
+    "orchestrator": "claude",
+    "worker-1": "claude",
+}
+
+
+def _load_config(cwd: str = ".") -> dict:
+    """cmux-agent.json 설정 파일을 읽는다. 없으면 기본값 반환."""
+    path = Path(cwd) / CONFIG_FILE
+    if path.exists():
+        try:
+            with path.open(encoding="utf-8") as f:
+                return {**DEFAULT_CONFIG, **json.load(f)}
+        except (json.JSONDecodeError, OSError):
+            pass
+    return dict(DEFAULT_CONFIG)
 
 
 def _get_fs(cwd: str = ".") -> AgentFileSystem:
@@ -150,13 +167,15 @@ def cmd_start(args: argparse.Namespace) -> None:
         except (json.JSONDecodeError, KeyError):
             pass
 
-    # 탭 정의: (이름, 역할)
-    tabs = [
+    # 설정 파일에서 탭 구성을 동적으로 결정
+    config = _load_config(cwd)
+    tabs: list[tuple[str, AgentRole, str | None]] = [
         ("controller", AgentRole.CONTROLLER, ctrl_surface),
         ("orchestrator", AgentRole.ORCHESTRATOR, None),
-        ("worker-1", AgentRole.WORKER, None),
-        ("worker-2", AgentRole.WORKER, None),
     ]
+    for name in sorted(config):
+        if name.startswith("worker-"):
+            tabs.append((name, AgentRole.WORKER, None))
 
     # orchestrator, worker-1, worker-2 탭 생성
     for i in range(1, len(tabs)):
@@ -199,12 +218,14 @@ def cmd_start(args: argparse.Namespace) -> None:
             workspace_id=ws_ref,
         )
 
-    # orchestrator, worker 탭에서 AI CLI 자동 실행
+    # orchestrator, worker 탭에서 AI CLI 자동 실행 (설정 파일 기반)
+    config = _load_config(cwd)
     time.sleep(0.5)
     for agent in agents:
         if agent.role in (AgentRole.ORCHESTRATOR, AgentRole.WORKER) and agent.surface_id:
+            provider = config.get(agent.name, "claude")
             cmux.send_text(
-                "claude\n",
+                f"{provider}\n",
                 surface_id=agent.surface_id,
                 workspace_id=ws_ref,
             )
