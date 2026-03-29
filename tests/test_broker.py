@@ -24,6 +24,9 @@ class FakeCmux(CmuxAdapter):
         self.calls.append(("_run", {"args": args}))
         return CmuxResult(ok=True, stdout="", stderr="")
 
+    def is_surface_alive(self, surface_id: str) -> bool:
+        return True
+
 
 @pytest.fixture
 def setup(tmp_path):

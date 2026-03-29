@@ -232,6 +232,18 @@ class CmuxAdapter:
         return self._run(*args)
 
     def is_surface_alive(self, surface_id: str) -> bool:
-        """surface가 아직 존재하는지 확인한다."""
-        result = self._run("surface-health", "--surface", surface_id)
-        return result.ok
+        """surface가 아직 존재하는지 tree를 파싱하여 확인한다."""
+        result = self._run("tree", "--all", "--json")
+        if not result.ok:
+            return False
+        try:
+            data = result.json()
+            for w in data.get("windows", []):
+                for ws in w.get("workspaces", []):
+                    for p in ws.get("panes", []):
+                        for s in p.get("surfaces", []):
+                            if s.get("ref") == surface_id:
+                                return True
+        except (json.JSONDecodeError, KeyError):
+            pass
+        return False
