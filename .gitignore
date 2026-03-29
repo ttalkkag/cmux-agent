@@ -1,6 +1,5 @@
-# DEFAULT
-
-# @todo
+# Agent Runtime
+.agent/
 
 # Distribution / packaging
 .Python
@@ -66,6 +65,7 @@ venv.bak/
 *.sql
 *.bak
 *.sqlite
+*.sqlite3
 
 # Docker
 Dockerfile.local
