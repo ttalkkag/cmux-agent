@@ -145,6 +145,21 @@ class CmuxAdapter:
         args.append(text)
         return self._run(*args)
 
+    def send_key(
+        self,
+        key: str,
+        *,
+        surface_id: str | None = None,
+        workspace_id: str | None = None,
+    ) -> CmuxResult:
+        args = ["send-key"]
+        if workspace_id:
+            args.extend(["--workspace", workspace_id])
+        if surface_id:
+            args.extend(["--surface", surface_id])
+        args.append(key)
+        return self._run(*args)
+
     def trigger_flash(
         self,
         *,

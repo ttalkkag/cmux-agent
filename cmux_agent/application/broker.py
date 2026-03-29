@@ -180,7 +180,12 @@ class MessageBroker:
                 payload=payload,
             )
             self._cmux.send_text(
-                injection + "\n",
+                injection,
+                surface_id=agent.surface_id,
+                workspace_id=self._workspace_id,
+            )
+            self._cmux.send_key(
+                "enter",
                 surface_id=agent.surface_id,
                 workspace_id=self._workspace_id,
             )

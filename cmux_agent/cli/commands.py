@@ -253,7 +253,12 @@ def cmd_task(args: argparse.Namespace) -> None:
     prompt += ", ".join(worker_names)
 
     cmux.send_text(
-        prompt + "\n",
+        prompt,
+        surface_id=orch.surface_id,
+        workspace_id=run.workspace_id,
+    )
+    cmux.send_key(
+        "enter",
         surface_id=orch.surface_id,
         workspace_id=run.workspace_id,
     )
