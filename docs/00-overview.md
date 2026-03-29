@@ -53,8 +53,8 @@ block-beta
 
 ## 핵심 메시지 흐름
 
-orchestrator와 worker 간의 메시지 중개 흐름이다.
-AI CLI는 독립적으로 실행되며, cmux-agent는 파일 기반으로 중개만 수행한다.
+사용자는 최초 작업만 요청하면, 이후 orchestrator와 worker가 자율적으로 순환한다.
+broker는 inbox 전달 후 `cmux send`로 AI CLI 터미널에 내용을 직접 주입한다.
 
 ```mermaid
 sequenceDiagram
@@ -67,36 +67,30 @@ sequenceDiagram
     participant WK as Worker<br/>(AI CLI)
     participant CX as cmux
 
-    Note over U,CX: 1. 초기화
-    U->>CX: cmux-agent start
-    CX-->>O: orchestrator pane 생성
-    CX-->>WK: worker pane 생성
-    U->>O: AI CLI 실행 (직접)
-    U->>WK: AI CLI 실행 (직접)
+    Note over U,CX: 1. 초기화 (자동)
+    U->>CX: cmux-agent
+    CX-->>O: orchestrator 탭 생성 + AI CLI 실행 + 프로토콜 주입
+    CX-->>WK: worker 탭 생성 + AI CLI 실행 + 프로토콜 주입
 
     Note over U,CX: 2. 작업 요청
-    U->>O: 작업 요청 (직접 입력)
+    U->>U: cmux-agent task "요청"
+    B->>CX: orchestrator 터미널에 send_text 자동 주입
+    CX-->>O: 작업 수신
 
-    Note over U,CX: 3. Dispatch 순환
+    Note over U,CX: 3. 자율 순환 (사용자 개입 없음)
     O->>OB: dispatch artifact 생성 (JSON)
     W->>OB: 새 파일 감지
     W->>B: artifact 전달
-    B->>B: 파싱 · 수신자 결정 · 라우팅
     B->>IB: worker inbox에 메시지 파일 생성
-    B->>CX: 알림 (notify / send_text)
-    CX-->>WK: 메시지 도착 통보
+    B->>CX: worker 터미널에 send_text 자동 주입
+    CX-->>WK: 작업 지시 수신 → 즉시 수행
 
-    Note over U,CX: 4. Result 순환
-    WK->>WK: inbox 확인 · 작업 수행
     WK->>OB: result artifact 생성 (JSON)
     W->>OB: 새 파일 감지
     W->>B: artifact 전달
     B->>IB: orchestrator inbox에 결과 전달
-    B->>CX: 알림
-    CX-->>O: 결과 도착 통보
-
-    Note over U,CX: 5. 반복 또는 완료
-    O->>O: 추가 dispatch 또는 완료 판단
+    B->>CX: orchestrator 터미널에 send_text 자동 주입
+    CX-->>O: 결과 수신 → 추가 dispatch 또는 완료
 ```
 
 ## 컴포넌트 구조
@@ -105,7 +99,7 @@ sequenceDiagram
 
 ```mermaid
 graph TD
-    CLI["<b>CLI</b><br/>사용자 명령 인터페이스<br/>start · register · watch<br/>status · events · send"]
+    CLI["<b>CLI</b><br/>사용자 명령 인터페이스<br/>start · task · watch<br/>status · events · send"]
     WATCH["<b>Watcher</b><br/>outbox 파일 감시<br/>artifact 감지 · 트리거<br/>watchdog / polling"]
     BROKER["<b>Broker</b><br/>메시지 라우팅<br/>inbox 전달 · 통보<br/>재시도 · 에러 처리"]
     PROMPT["<b>Prompting</b><br/>delivery 메시지 생성<br/>역할별 context 포함<br/>artifact 형식 안내"]
@@ -234,7 +228,7 @@ flowchart TD
     PARSE["Broker: artifact 파싱<br/>type · sender · recipient 추출"]
     ROUTE{"수신자<br/>등록 확인"}
     DELIVER["inbox/{recipient}/ 에<br/>메시지 파일 생성"]
-    NOTIFY["cmux 알림<br/>notify · send_text"]
+    NOTIFY["cmux 알림 + 자동 주입<br/>notify · send_text"]
     RECORD["StateStore 기록<br/>Message DELIVERED"]
     EVENT["이벤트 로그<br/>JSONL 기록"]
     MOVE["outbox → processed/<br/>파일 이동"]
@@ -253,7 +247,8 @@ flowchart TD
 ```mermaid
 graph LR
     subgraph run["Run 관리"]
-        START["start<br/>run 생성 · workspace · 디렉토리 초기화"]
+        START["(기본 명령)<br/>workspace + AI CLI + watcher 자동 시작"]
+        TASK["task<br/>orchestrator에 작업 주입"]
         STOP["stop<br/>run 종료"]
         STATUS["status<br/>run 상태 조회"]
         EVENTS["events<br/>이벤트 로그 조회"]
@@ -353,7 +348,8 @@ graph LR
 
 - **AI CLI는 독립적**: 감싸지 않고, stdout을 가로채지 않음
 - **Artifact 기반 트리거**: 파일 생성 → 감지 → 라우팅 (message queue 패턴)
-- **cmux-agent = 브로커**: 메시지를 중개할 뿐, AI CLI의 실행에 개입하지 않음
+- **자동 주입**: broker가 inbox 전달 후 `cmux send`로 AI CLI 터미널에 직접 주입
+- **프로토콜 사전 주입**: start 시 각 AI CLI에 역할/형식/경로를 안내
 - **GUI ≠ source of truth**: 상태 기준은 SQLite + JSONL
 - **provider 무관**: 어떤 AI CLI든 동일한 artifact 형식으로 통신
 
