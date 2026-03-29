@@ -61,6 +61,8 @@ class MessageBroker:
         recipient = data["recipient"]
         msg_type_str = data["type"]
 
+        logger.info("artifact 감지: %s → %s (%s)", sender, recipient, msg_type_str)
+
         self._event_log.append(
             artifact_detected(self._run_id, str(artifact_path), sender)
         )
@@ -142,6 +144,7 @@ class MessageBroker:
             self._event_log.append(
                 message_delivered(self._run_id, msg.message_id, recipient)
             )
+            logger.info("전달 완료: %s → %s", sender, recipient)
             self._inject_and_notify(recipient, sender, msg_type, payload)
         else:
             msg.mark_failed()
@@ -149,6 +152,7 @@ class MessageBroker:
             self._event_log.append(
                 message_failed(self._run_id, msg.message_id, "inbox 전달 실패")
             )
+            logger.error("전달 실패: %s → %s", sender, recipient)
 
         # 처리 완료된 artifact 이동
         try:
