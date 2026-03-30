@@ -74,7 +74,7 @@ watcher → `handle_artifact(path, data)` 호출
 수신자의 inbox 디렉토리에 메시지 파일 생성:
 
 ```
-.agent/inbox/{recipient}/{message_id}.json
+.cmux/inbox/{recipient}/{message_id}.json
 ```
 
 파일 내용:

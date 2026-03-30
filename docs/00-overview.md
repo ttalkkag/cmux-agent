@@ -193,7 +193,7 @@ flowchart LR
         W["Worker"]
     end
 
-    subgraph fs["파일 시스템 (.agent/)"]
+    subgraph fs["파일 시스템 (.cmux/)"]
         OUTBOX["outbox/<br/>AI CLI가 쓰기"]
         INBOX_O["inbox/orchestrator/<br/>Broker가 쓰기"]
         INBOX_W["inbox/worker-1/<br/>Broker가 쓰기"]
@@ -281,7 +281,7 @@ graph LR
 
 ```mermaid
 graph TD
-    ROOT[".agent/"]
+    ROOT[".cmux/"]
     DB["control-plane.sqlite3<br/>정규화된 현재 상태"]
     EV["events.jsonl<br/>append-only 이벤트"]
     PROTO_O["ORCHESTRATOR.md<br/>orchestrator 프로토콜"]

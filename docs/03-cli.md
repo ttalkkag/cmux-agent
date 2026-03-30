@@ -22,7 +22,7 @@ cmux-agent = "cmux_agent.cli:main"
 ### 초기화 & 진단
 
 ```bash
-cmux-agent doctor                    # cmux 설치 확인, .agent 디렉토리 확인
+cmux-agent doctor                    # cmux 설치 확인, .cmux 디렉토리 확인
 ```
 
 ### Run 관리
@@ -72,10 +72,10 @@ cmux-agent messages [run_id]               # 메시지 이력 조회
 인자 없이 `cmux-agent`를 실행하면 start가 동작한다.
 
 1. run_id 생성
-2. `.agent/` 디렉토리 초기화 (outbox, inbox, processed)
+2. `.cmux/` 디렉토리 초기화 (outbox, inbox, processed, prompts)
 3. SQLite 초기화, Run 레코드 생성
 4. cmux workspace 생성 (첫 번째 탭 = controller)
-5. `cmux-agent.json` 설정 파일에서 agent 구성 로드
+5. `.cmux/agent.json` 설정 파일에서 agent 구성 로드
 6. orchestrator, worker-N 탭을 `new-surface`로 동적 생성
 7. agent 등록 + inbox 디렉토리 생성 + 탭 이름 설정
 8. 프로토콜 파일 생성 (ORCHESTRATOR.md, WORKER-N.md)
@@ -154,9 +154,9 @@ run_id를 명시하지 않으면 가장 최근 활성 run을 자동으로 사용
 11. run_id 자동 감지
 12. 단위 테스트
 
-## 설정 파일 (`cmux-agent.json`)
+## 설정 파일 (`.cmux/agent.json`)
 
-프로젝트 루트에 설정 파일을 두면 agent별 AI CLI를 개별 지정할 수 있다.
+`.cmux/agent.json`에 설정 파일을 두면 agent별 AI CLI를 개별 지정할 수 있다.
 파일이 없으면 기본값(`orchestrator: claude`, `worker-1: claude`)을 사용한다.
 
 ```json

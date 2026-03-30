@@ -13,7 +13,7 @@ outbox 디렉토리를 감시하여 AI CLI가 생성한 artifact를 감지하고
 ## 감지 대상
 
 ```
-.agent/outbox/
+.cmux/outbox/
 ├── 1711698000-orchestrator-dispatch.json
 ├── 1711698005-worker-1-result.json
 └── ...

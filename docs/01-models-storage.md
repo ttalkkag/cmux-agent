@@ -80,7 +80,7 @@ PENDING → DELIVERED → ACKNOWLEDGED
 ## Inbox / Outbox 디렉토리 구조
 
 ```
-.agent/
+.cmux/
 ├── control-plane.sqlite3          # 정규화된 현재 상태
 ├── events.jsonl                   # append-only 이벤트 기록
 ├── outbox/                        # AI CLI가 artifact를 쓰는 곳
