@@ -20,8 +20,8 @@ from cmux_agent.infrastructure.event_log import EventLog
 from cmux_agent.infrastructure.filesystem import AgentFileSystem
 from cmux_agent.infrastructure.storage import StateStore
 
-AGENT_DIR = ".agent"
-CONFIG_FILE = "cmux-agent.json"
+CMUX_DIR = ".cmux"
+CONFIG_FILE = "agent.json"
 DEFAULT_CONFIG = {
     "orchestrator": "claude",
     "worker-1": "claude",
@@ -29,8 +29,8 @@ DEFAULT_CONFIG = {
 
 
 def _load_config(cwd: str = ".") -> dict:
-    """cmux-agent.json 설정 파일을 읽는다. 없으면 기본값 반환."""
-    path = Path(cwd) / CONFIG_FILE
+    """.cmux/agent.json 설정 파일을 읽는다. 없으면 기본값 반환."""
+    path = Path(cwd) / CMUX_DIR / CONFIG_FILE
     if path.exists():
         try:
             with path.open(encoding="utf-8") as f:
@@ -41,7 +41,7 @@ def _load_config(cwd: str = ".") -> dict:
 
 
 def _get_fs(cwd: str = ".") -> AgentFileSystem:
-    return AgentFileSystem(Path(cwd) / AGENT_DIR)
+    return AgentFileSystem(Path(cwd) / CMUX_DIR)
 
 
 def _get_store(fs: AgentFileSystem) -> StateStore:
@@ -200,8 +200,15 @@ def cmd_start(args: argparse.Namespace) -> None:
             cmux.rename_tab(name, surface_id=surface_id, workspace_id=ws_ref)
         agents.append(agent)
 
-    # 프로토콜 파일 생성
-    prompt_builder = PromptBuilder(str(fs.outbox), str(fs.inbox))
+    # 프롬프트 템플릿 확인 및 프로토콜 파일 생성
+    prompt_builder = PromptBuilder(str(fs.outbox), str(fs.inbox), str(fs.prompts))
+    missing = prompt_builder.check_prompts()
+    if missing:
+        print(
+            f".cmux/prompts/ 에 템플릿 파일이 없습니다: {', '.join(missing)}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     prompt_builder.write_protocol_files(fs.base, agents)
 
     # run 상태 → RUNNING
@@ -392,6 +399,7 @@ def cmd_watch(args: argparse.Namespace) -> None:
     prompt_builder = PromptBuilder(
         outbox_path=str(fs.outbox),
         inbox_base=str(fs.inbox),
+        prompts_dir=str(fs.prompts),
     )
     broker = MessageBroker(
         store=store,

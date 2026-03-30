@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 class AgentFileSystem:
-    """`.agent/` 디렉토리 구조를 관리한다."""
+    """`.cmux/` 디렉토리 구조를 관리한다."""
 
     def __init__(self, base_dir: str | Path) -> None:
         self.base = Path(base_dir)
@@ -17,9 +17,10 @@ class AgentFileSystem:
         self.inbox = self.base / "inbox"
         self.processed = self.base / "processed"
         self.failed = self.processed / "failed"
+        self.prompts = self.base / "prompts"
 
     def init(self) -> None:
-        for d in (self.outbox, self.inbox, self.processed, self.failed):
+        for d in (self.outbox, self.inbox, self.processed, self.failed, self.prompts):
             d.mkdir(parents=True, exist_ok=True)
 
     def create_inbox(self, agent_name: str) -> Path:

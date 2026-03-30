@@ -30,7 +30,7 @@ class FakeCmux(CmuxAdapter):
 
 @pytest.fixture
 def setup(tmp_path):
-    fs = AgentFileSystem(tmp_path / ".agent")
+    fs = AgentFileSystem(tmp_path / ".cmux")
     fs.init()
     store = StateStore(fs.db_path)
     event_log = EventLog(fs.event_log_path)
@@ -52,7 +52,10 @@ def setup(tmp_path):
         name="controller",
     ))
 
-    prompt_builder = PromptBuilder(str(fs.outbox), str(fs.inbox))
+    prompts_dir = str(
+        (Path(__file__).resolve().parent.parent / ".cmux" / "prompts")
+    )
+    prompt_builder = PromptBuilder(str(fs.outbox), str(fs.inbox), prompts_dir)
     broker = MessageBroker(
         store=store, event_log=event_log, fs=fs,
         cmux=cmux, prompt_builder=prompt_builder, run_id="run-1",

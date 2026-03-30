@@ -7,7 +7,7 @@ from cmux_agent.infrastructure.filesystem import AgentFileSystem
 
 class TestAgentFileSystem:
     def test_init_creates_directories(self, tmp_path):
-        fs = AgentFileSystem(tmp_path / ".agent")
+        fs = AgentFileSystem(tmp_path / ".cmux")
         fs.init()
 
         assert fs.outbox.exists()
@@ -16,14 +16,14 @@ class TestAgentFileSystem:
         assert fs.failed.exists()
 
     def test_create_inbox(self, tmp_path):
-        fs = AgentFileSystem(tmp_path / ".agent")
+        fs = AgentFileSystem(tmp_path / ".cmux")
         fs.init()
         inbox = fs.create_inbox("worker-1")
         assert inbox.exists()
         assert inbox.name == "worker-1"
 
     def test_write_to_inbox(self, tmp_path):
-        fs = AgentFileSystem(tmp_path / ".agent")
+        fs = AgentFileSystem(tmp_path / ".cmux")
         fs.init()
 
         data = {"type": "dispatch", "message": "hello"}
@@ -34,7 +34,7 @@ class TestAgentFileSystem:
         assert content["message"] == "hello"
 
     def test_move_to_processed(self, tmp_path):
-        fs = AgentFileSystem(tmp_path / ".agent")
+        fs = AgentFileSystem(tmp_path / ".cmux")
         fs.init()
 
         artifact = fs.outbox / "test.json"
@@ -45,7 +45,7 @@ class TestAgentFileSystem:
         assert not artifact.exists()
 
     def test_move_to_failed(self, tmp_path):
-        fs = AgentFileSystem(tmp_path / ".agent")
+        fs = AgentFileSystem(tmp_path / ".cmux")
         fs.init()
 
         artifact = fs.outbox / "bad.json"
@@ -56,7 +56,7 @@ class TestAgentFileSystem:
         assert dst.parent == fs.failed
 
     def test_list_outbox(self, tmp_path):
-        fs = AgentFileSystem(tmp_path / ".agent")
+        fs = AgentFileSystem(tmp_path / ".cmux")
         fs.init()
 
         (fs.outbox / "a.json").write_text("{}")
