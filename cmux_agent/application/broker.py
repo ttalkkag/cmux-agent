@@ -61,7 +61,10 @@ class MessageBroker:
         recipient = data["recipient"]
         msg_type_str = data["type"]
 
-        print(f"  → 라우팅: {sender} → {recipient} ({msg_type_str})", flush=True)
+        if msg_type_str == "dispatch":
+            print(f"  → 라우팅: {sender} → {recipient} (dispatch)", flush=True)
+        else:
+            print(f"  → 라우팅: {recipient} ← {sender} (result)", flush=True)
 
         self._event_log.append(
             artifact_detected(self._run_id, str(artifact_path), sender)
@@ -156,7 +159,10 @@ class MessageBroker:
             self._event_log.append(
                 message_delivered(self._run_id, msg.message_id, recipient)
             )
-            print(f"  ✓ 전달 완료: {sender} → {recipient}", flush=True)
+            if msg_type == MessageType.DISPATCH:
+                print(f"  ✓ 전달 완료: {sender} → {recipient}", flush=True)
+            else:
+                print(f"  ✓ 전달 완료: {recipient} ← {sender}", flush=True)
             self._inject_and_notify(recipient, sender, msg_type, payload)
         else:
             msg.mark_failed()
@@ -164,7 +170,10 @@ class MessageBroker:
             self._event_log.append(
                 message_failed(self._run_id, msg.message_id, "inbox 전달 실패")
             )
-            print(f"  ✗ 전달 실패: {sender} → {recipient}", flush=True)
+            if msg_type == MessageType.DISPATCH:
+                print(f"  ✗ 전달 실패: {sender} → {recipient}", flush=True)
+            else:
+                print(f"  ✗ 전달 실패: {recipient} ← {sender}", flush=True)
 
         # 처리 완료된 artifact 이동
         try:

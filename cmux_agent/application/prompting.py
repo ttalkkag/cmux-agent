@@ -123,16 +123,26 @@ class PromptBuilder:
         message = payload.get("message", "")
 
         if msg_type == MessageType.DISPATCH:
-            worker_prompt = self.read_prompt("worker.md") or ""
-            parts = []
-            if worker_prompt:
-                parts.append(worker_prompt)
-                parts.append("---")
-            parts.append(f"[cmux-agent] {sender}로부터 작업이 도착했습니다.")
-            parts.append(f"\n작업: {message}")
+            worker_prompt = (
+                self.read_prompt(f"{recipient}.md")
+                or self.read_prompt("worker.md")
+            )
+            if not worker_prompt:
+                raise FileNotFoundError(
+                    f"프롬프트 파일이 없습니다: "
+                    f"{recipient}.md 또는 worker.md"
+                )
+            parts = [
+                worker_prompt,
+                "---",
+                f"[cmux-agent] {sender}로부터 작업이 도착했습니다.",
+                f"당신의 이름: {recipient}",
+                f"\n작업: {message}",
+            ]
             return "\n\n".join(parts)
 
-        parts = []
-        parts.append(f"[cmux-agent] {sender}의 작업 결과입니다.")
-        parts.append(f"결과: {message}")
+        parts = [
+            f"[cmux-agent] {sender}의 작업 결과입니다.",
+            f"결과: {message}",
+        ]
         return "\n\n".join(parts)

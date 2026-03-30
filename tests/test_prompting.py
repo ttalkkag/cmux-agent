@@ -99,3 +99,50 @@ class TestPromptBuilder:
         )
         assert "CUSTOM worker protocol" in result
         assert "do stuff" in result
+
+    def test_worker_specific_prompt_priority(self, tmp_path):
+        """worker-2.md가 있으면 worker.md보다 우선."""
+        prompts_dir = tmp_path / "prompts"
+        prompts_dir.mkdir()
+        (prompts_dir / "worker.md").write_text("기본 worker")
+        (prompts_dir / "worker-2.md").write_text("worker-2 전용")
+
+        builder = PromptBuilder("/tmp/outbox", "/tmp/inbox", str(prompts_dir))
+        result = builder.build_injection_prompt(
+            sender="orchestrator",
+            recipient="worker-2",
+            msg_type=MessageType.DISPATCH,
+            payload={"message": "task"},
+        )
+        assert "worker-2 전용" in result
+        assert "기본 worker" not in result
+
+    def test_worker_fallback_to_default(self, tmp_path):
+        """worker-1.md가 없으면 worker.md 사용."""
+        prompts_dir = tmp_path / "prompts"
+        prompts_dir.mkdir()
+        (prompts_dir / "worker.md").write_text("기본 worker")
+
+        builder = PromptBuilder("/tmp/outbox", "/tmp/inbox", str(prompts_dir))
+        result = builder.build_injection_prompt(
+            sender="orchestrator",
+            recipient="worker-1",
+            msg_type=MessageType.DISPATCH,
+            payload={"message": "task"},
+        )
+        assert "기본 worker" in result
+
+    def test_worker_no_prompt_raises(self, tmp_path):
+        """worker.md도 없으면 오류."""
+        prompts_dir = tmp_path / "prompts"
+        prompts_dir.mkdir()
+
+        builder = PromptBuilder("/tmp/outbox", "/tmp/inbox", str(prompts_dir))
+        import pytest
+        with pytest.raises(FileNotFoundError):
+            builder.build_injection_prompt(
+                sender="orchestrator",
+                recipient="worker-1",
+                msg_type=MessageType.DISPATCH,
+                payload={"message": "task"},
+            )

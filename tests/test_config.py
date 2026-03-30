@@ -18,7 +18,7 @@ class TestLoadConfig:
             "worker-2": "gemini",
         }
         (tmp_path / ".cmux").mkdir()
-        (tmp_path / ".cmux" / "agent.json").write_text(json.dumps(cfg))
+        (tmp_path / ".cmux" / "agents.json").write_text(json.dumps(cfg))
 
         config = _load_config(str(tmp_path))
         assert config["orchestrator"] == "claude"
@@ -28,7 +28,7 @@ class TestLoadConfig:
     def test_merges_with_default(self, tmp_path):
         cfg = {"worker-2": "gemini"}
         (tmp_path / ".cmux").mkdir()
-        (tmp_path / ".cmux" / "agent.json").write_text(json.dumps(cfg))
+        (tmp_path / ".cmux" / "agents.json").write_text(json.dumps(cfg))
 
         config = _load_config(str(tmp_path))
         assert config["orchestrator"] == "claude"
@@ -37,6 +37,6 @@ class TestLoadConfig:
 
     def test_invalid_json_returns_default(self, tmp_path):
         (tmp_path / ".cmux").mkdir()
-        (tmp_path / ".cmux" / "agent.json").write_text("not json")
+        (tmp_path / ".cmux" / "agents.json").write_text("not json")
         config = _load_config(str(tmp_path))
         assert config == DEFAULT_CONFIG
