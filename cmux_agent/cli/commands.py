@@ -21,7 +21,7 @@ from cmux_agent.infrastructure.filesystem import AgentFileSystem
 from cmux_agent.infrastructure.storage import StateStore
 
 CMUX_DIR = ".cmux"
-CONFIG_FILE = "agent.json"
+CONFIG_FILE = "agents.json"
 DEFAULT_CONFIG = {
     "orchestrator": "claude",
     "worker-1": "claude",
@@ -29,7 +29,7 @@ DEFAULT_CONFIG = {
 
 
 def _load_config(cwd: str = ".") -> dict:
-    """.cmux/agent.json 설정 파일을 읽는다. 없으면 기본값 반환."""
+    """.cmux/agents.json 설정 파일을 읽는다. 없으면 기본값 반환."""
     path = Path(cwd) / CMUX_DIR / CONFIG_FILE
     if path.exists():
         try:
