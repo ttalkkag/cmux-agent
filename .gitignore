@@ -1,5 +1,9 @@
-# Agent Runtime
-.agent/
+# Agent Runtime (.cmux/ 내 런타임 파일만 제외, 설정/프롬프트는 추적)
+.cmux/outbox/
+.cmux/inbox/
+.cmux/processed/
+.cmux/*.sqlite3*
+.cmux/*.jsonl
 
 # Distribution / packaging
 .Python
