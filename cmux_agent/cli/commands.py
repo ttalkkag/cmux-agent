@@ -200,17 +200,6 @@ def cmd_start(args: argparse.Namespace) -> None:
             cmux.rename_tab(name, surface_id=surface_id, workspace_id=ws_ref)
         agents.append(agent)
 
-    # 프롬프트 템플릿 확인 및 프로토콜 파일 생성
-    prompt_builder = PromptBuilder(str(fs.outbox), str(fs.inbox), str(fs.prompts))
-    missing = prompt_builder.check_prompts()
-    if missing:
-        print(
-            f".cmux/prompts/ 에 템플릿 파일이 없습니다: {', '.join(missing)}",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    prompt_builder.write_protocol_files(fs.base, agents)
-
     # run 상태 → RUNNING
     run.transition_to(RunStatus.RUNNING)
     store.save_run(run)
@@ -280,11 +269,18 @@ def cmd_task(args: argparse.Namespace) -> None:
         print("활성 worker가 없습니다.", file=sys.stderr)
         sys.exit(1)
 
+    # .cmux/prompts/orchestrator.md 읽기
+    prompt_path = fs.prompts / "orchestrator.md"
+    if not prompt_path.exists():
+        print(f"프롬프트 파일이 없습니다: {prompt_path}", file=sys.stderr)
+        sys.exit(1)
+
+    protocol = prompt_path.read_text(encoding="utf-8")
     prompt = (
-        f"{request}\n"
-        f"\n"
-        f"위 작업을 분석하고, worker에게 위임하세요.\n"
-        f"{fs.outbox} 에 dispatch artifact(JSON)를 생성하세요.\n"
+        f"{protocol}\n\n"
+        f"---\n\n"
+        f"## 작업 요청\n"
+        f"{request}\n\n"
         f"사용 가능한 worker: {', '.join(active_names)}"
     )
 

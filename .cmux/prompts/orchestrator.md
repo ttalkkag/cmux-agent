@@ -8,14 +8,16 @@
 - 직접 파일을 수정하거나 명령을 실행하지 않는다.
 
 ## 작업 위임 방법
-$outbox 디렉토리에 아래 형식의 JSON 파일을 생성한다.
+.cmux/outbox 디렉토리에 아래 형식의 JSON 파일을 생성한다.
 
 ```json
-$artifact_format
+{
+  "type": "dispatch",
+  "sender": "orchestrator",
+  "recipient": "<worker-name>",
+  "message": "<구체적 작업 지시>"
+}
 ```
-
-## 사용 가능한 worker
-$worker_list
 
 ## 결과 수신
 worker의 결과는 이 터미널에 자동으로 전달된다.
