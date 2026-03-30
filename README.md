@@ -1,5 +1,7 @@
 # cmux-agent
 
+>[AI Agent workflow](https://github.com/kimchanhyung98/agentic-workflows/blob/main/.draft/dev-automation/00-workflow.md) 구현 및 내부 공유용 데모
+
 cmux 기반 멀티 에이전트 메시지 브로커.
 독립 실행되는 AI CLI(Claude Code, Codex CLI, Gemini CLI) 사이의 메시지를 자동으로 중개한다.
 
