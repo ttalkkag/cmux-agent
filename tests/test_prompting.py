@@ -89,6 +89,7 @@ class TestPromptBuilder:
         prompts_dir = tmp_path / "prompts"
         prompts_dir.mkdir()
         (prompts_dir / "worker.md").write_text("CUSTOM worker protocol")
+        (prompts_dir / "dispatch.md").write_text("작업: {message}")
 
         builder = PromptBuilder("/tmp/outbox", "/tmp/inbox", str(prompts_dir))
         result = builder.build_injection_prompt(

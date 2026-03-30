@@ -132,17 +132,17 @@ class PromptBuilder:
                     f"프롬프트 파일이 없습니다: "
                     f"{recipient}.md 또는 worker.md"
                 )
-            parts = [
-                worker_prompt,
-                "---",
-                f"[cmux-agent] {sender}로부터 작업이 도착했습니다.",
-                f"당신의 이름: {recipient}",
-                f"\n작업: {message}",
-            ]
+            dispatch_prompt = self.read_prompt("dispatch.md") or ""
+            parts = [worker_prompt, "---"]
+            if dispatch_prompt:
+                parts.append(dispatch_prompt.format(
+                    sender=sender, recipient=recipient, message=message,
+                ))
             return "\n\n".join(parts)
 
-        parts = [
-            f"[cmux-agent] {sender}의 작업 결과입니다.",
-            f"결과: {message}",
-        ]
-        return "\n\n".join(parts)
+        result_prompt = self.read_prompt("result.md")
+        if not result_prompt:
+            raise FileNotFoundError("프롬프트 파일이 없습니다: result.md")
+        return result_prompt.format(
+            sender=sender, recipient=recipient, message=message,
+        )
