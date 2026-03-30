@@ -26,8 +26,8 @@ class TestPromptBuilder:
             payload={"message": "build login API"},
         )
         assert result["type"] == "dispatch"
-        assert result["task"] == "build login API"
-        assert "result" in result["artifact_format"]["type"]
+        assert result["from"] == "orchestrator"
+        assert result["message"] == "build login API"
 
     def test_result_delivery(self):
         result = self.builder.build_delivery(
@@ -37,8 +37,8 @@ class TestPromptBuilder:
             payload={"message": "login API done"},
         )
         assert result["type"] == "result"
-        assert result["result"] == "login API done"
-        assert "dispatch" in result["artifact_format"]["type"]
+        assert result["from"] == "worker-1"
+        assert result["message"] == "login API done"
 
     def test_injection_prompt_dispatch(self):
         result = self.builder.build_injection_prompt(

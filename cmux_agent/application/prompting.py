@@ -2,30 +2,10 @@
 
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-from cmux_agent.domain.models import AgentRole, MessageType
-
-if TYPE_CHECKING:
-    from cmux_agent.domain.models import Agent
-
-
-ARTIFACT_FORMAT_DISPATCH = {
-    "type": "dispatch",
-    "sender": "orchestrator",
-    "recipient": "<worker-name>",
-    "message": "<구체적 작업 지시>",
-}
-
-ARTIFACT_FORMAT_RESULT = {
-    "type": "result",
-    "sender": "<worker-name>",
-    "recipient": "orchestrator",
-    "message": "<작업 결과 요약>",
-}
+from cmux_agent.domain.models import MessageType
 
 
 class PromptBuilder:
@@ -63,51 +43,13 @@ class PromptBuilder:
         payload: dict,
     ) -> dict:
         now = datetime.now(UTC).isoformat()
-
-        if msg_type == MessageType.DISPATCH:
-            return self._dispatch_delivery(sender, recipient, payload, now)
-        return self._result_delivery(sender, recipient, payload, now)
-
-    def _dispatch_delivery(
-        self, sender: str, recipient: str, payload: dict, ts: str,
-    ) -> dict:
         return {
             "message_id": None,
             "from": sender,
-            "type": "dispatch",
-            "task": payload.get("message", ""),
+            "type": msg_type.value.lower(),
+            "message": payload.get("message", ""),
             "context": payload.get("context", {}),
-            "instructions": (
-                f"작업 완료 후 {self._outbox} 에 result artifact(JSON)를 생성하세요."
-            ),
-            "artifact_format": {
-                "type": "result",
-                "sender": recipient,
-                "recipient": sender,
-                "message": "<작업 결과 요약>",
-            },
-            "created_at": ts,
-        }
-
-    def _result_delivery(
-        self, sender: str, recipient: str, payload: dict, ts: str,
-    ) -> dict:
-        return {
-            "message_id": None,
-            "from": sender,
-            "type": "result",
-            "result": payload.get("message", ""),
-            "context": payload.get("context", {}),
-            "instructions": (
-                f"추가 작업이 필요하면 {self._outbox} 에 dispatch artifact를 생성하세요."
-            ),
-            "artifact_format": {
-                "type": "dispatch",
-                "sender": recipient,
-                "recipient": "<worker-name>",
-                "message": "<작업 지시>",
-            },
-            "created_at": ts,
+            "created_at": now,
         }
 
     # -- 터미널 주입 프롬프트 (send_text용) ------------------------------------
