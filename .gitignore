@@ -1,9 +1,6 @@
-# Agent Runtime (.cmux/ 내 런타임 파일만 제외, 설정/프롬프트는 추적)
-.cmux/outbox/
-.cmux/inbox/
-.cmux/processed/
-.cmux/*.sqlite3*
-.cmux/*.jsonl
+.cmux
+!.cmux/agents.json
+!.cmux/prompts/
 
 # Distribution / packaging
 .Python
@@ -152,12 +149,15 @@ $RECYCLE.BIN/
 .windsurf/*
 
 # Claude
+**/CLAUDE.md
+!/CLAUDE.md
 .claude/commands/speckit.*
 .claude/hooks/.permissions-checked
 .claude/memory/*
 !.claude/memory/.gitkeep
 .claude/plans
 .claude/settings.local.json
+.remember
 
 # Codex
 .codex/commands/speckit.*
