@@ -12,9 +12,7 @@ dev: ## 전체 설정 (init + claude + speckit)
 
 check: ## 테스트 및 린트 검사 실행
 	@echo "[check] running tests..."
-	# 테스트 명령어 추가 (예: npm test, pytest, go test 등)
-	@echo "[check] running lint..."
-	# 린트 명령어 추가 (예: npm run lint, flake8, golangci-lint 등)
+	@uv run pytest tests/ -v
 	@echo "[check] all checks passed"
 
 claude: ## Claude Code 환경 설정
