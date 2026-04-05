@@ -36,6 +36,13 @@ class MessageStatus(str, enum.Enum):
     FAILED = "FAILED"
 
 
+class TaskState(str, enum.Enum):
+    SUBMITTED = "SUBMITTED"
+    WORKING = "WORKING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
 # ---------------------------------------------------------------------------
 # Entities
 # ---------------------------------------------------------------------------
@@ -94,6 +101,8 @@ class Message:
     status: MessageStatus = MessageStatus.PENDING
     payload: str = ""
     artifact_path: str | None = None
+    task_id: str | None = None
+    context_id: str | None = None
     created_at: datetime = field(default_factory=_now)
     delivered_at: datetime | None = None
 
@@ -103,3 +112,50 @@ class Message:
 
     def mark_failed(self) -> None:
         self.status = MessageStatus.FAILED
+
+
+@dataclass
+class Part:
+    kind: str = "text"
+    text: str | None = None
+    data: dict | None = None
+    media_type: str = "text/plain"
+
+
+@dataclass
+class Artifact:
+    artifact_id: str = field(default_factory=_uuid)
+    task_id: str = ""
+    parts: list[Part] = field(default_factory=list)
+    created_at: datetime = field(default_factory=_now)
+
+
+@dataclass
+class Task:
+    task_id: str = field(default_factory=_uuid)
+    context_id: str = field(default_factory=_uuid)
+    run_id: str = ""
+    state: TaskState = TaskState.SUBMITTED
+    history_message_ids: list[str] = field(default_factory=list)
+    created_at: datetime = field(default_factory=_now)
+    updated_at: datetime = field(default_factory=_now)
+
+    _TRANSITIONS: dict[TaskState, set[TaskState]] = field(
+        init=False,
+        repr=False,
+        default_factory=lambda: {
+            TaskState.SUBMITTED: {TaskState.WORKING, TaskState.FAILED},
+            TaskState.WORKING: {TaskState.COMPLETED, TaskState.FAILED},
+        },
+    )
+
+    def transition_to(self, new_state: TaskState) -> None:
+        allowed = self._TRANSITIONS.get(self.state, set())
+        if new_state not in allowed:
+            msg = f"Task {self.state.value} → {new_state.value} 전이 불가"
+            raise ValueError(msg)
+        self.state = new_state
+        self.updated_at = _now()
+
+    def add_message(self, message_id: str) -> None:
+        self.history_message_ids.append(message_id)

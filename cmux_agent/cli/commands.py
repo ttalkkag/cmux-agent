@@ -28,6 +28,13 @@ DEFAULT_CONFIG = {
 }
 
 
+def _normalize_agent_entry(value: str | dict) -> dict:
+    """agent 설정 항목을 정규화한다. string이면 provider로, dict이면 그대로."""
+    if isinstance(value, str):
+        return {"provider": value}
+    return value
+
+
 def _load_config(cwd: str = ".") -> dict:
     """.cmux/agents.json 설정 파일을 읽는다. 없으면 기본값 반환."""
     path = Path(cwd) / CMUX_DIR / CONFIG_FILE
@@ -38,6 +45,12 @@ def _load_config(cwd: str = ".") -> dict:
         except (json.JSONDecodeError, OSError):
             pass
     return dict(DEFAULT_CONFIG)
+
+
+def _load_normalized_config(cwd: str = ".") -> dict[str, dict]:
+    """agents.json을 string/object 겸용으로 읽어 정규화된 dict를 반환한다."""
+    raw = _load_config(cwd)
+    return {name: _normalize_agent_entry(value) for name, value in raw.items()}
 
 
 def _get_fs(cwd: str = ".") -> AgentFileSystem:
@@ -215,11 +228,12 @@ def cmd_start(args: argparse.Namespace) -> None:
         )
 
     # orchestrator, worker 탭에서 AI CLI 자동 실행 (설정 파일 기반)
-    config = _load_config(cwd)
+    norm_config = _load_normalized_config(cwd)
     time.sleep(0.5)
     for agent in agents:
         if agent.role in (AgentRole.ORCHESTRATOR, AgentRole.WORKER) and agent.surface_id:
-            provider = config.get(agent.name, "claude")
+            entry = norm_config.get(agent.name, {"provider": "claude"})
+            provider = entry.get("provider", "claude")
             cmux.send_text(
                 f"{provider}\n",
                 surface_id=agent.surface_id,

@@ -27,12 +27,14 @@ class ArtifactConsumer(Protocol):
 
 
 def validate_artifact(data: dict) -> str | None:
-    """artifact의 유효성을 검증한다. 오류 시 사유 문자열 반환."""
+    """artifact의 유효성을 검증한다. legacy 4-field와 확장 포맷 모두 허용."""
     missing = REQUIRED_FIELDS - set(data.keys())
     if missing:
         return f"필수 필드 누락: {missing}"
     if data["type"] not in ("dispatch", "result"):
         return f"알 수 없는 type: {data['type']}"
+    if "parts" in data and not isinstance(data["parts"], list):
+        return "parts는 리스트여야 합니다"
     return None
 
 

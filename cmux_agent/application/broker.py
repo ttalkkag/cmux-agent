@@ -4,16 +4,28 @@ from __future__ import annotations
 
 import json
 import logging
+import uuid
 from pathlib import Path
 
 from cmux_agent.application.prompting import PromptBuilder
 from cmux_agent.domain.events import (
+    artifact_created,
     artifact_detected,
     artifact_validation_failed,
     message_delivered,
     message_failed,
+    task_created,
+    task_state_changed,
 )
-from cmux_agent.domain.models import Message, MessageStatus, MessageType
+from cmux_agent.domain.models import (
+    Artifact,
+    Message,
+    MessageStatus,
+    MessageType,
+    Part,
+    Task,
+    TaskState,
+)
 from cmux_agent.infrastructure.cmux import CmuxAdapter
 from cmux_agent.infrastructure.event_log import EventLog
 from cmux_agent.infrastructure.filesystem import AgentFileSystem
@@ -123,6 +135,21 @@ class MessageBroker:
         payload: dict,
         artifact_path: Path,
     ) -> None:
+        # Task 생성/조회 및 Message correlation (실패해도 라우팅은 계속)
+        try:
+            task = self._resolve_task(sender, recipient, msg_type, payload)
+        except Exception:
+            logger.exception(
+                "Task 처리 실패 (메시지 라우팅은 계속됨): sender=%s, recipient=%s",
+                sender, recipient,
+            )
+            task = None
+        task_id = payload.get("task_id")
+        context_id = payload.get("context_id")
+        if task:
+            task_id = task.task_id
+            context_id = task.context_id
+
         msg = Message(
             run_id=self._run_id,
             sender=sender,
@@ -130,8 +157,15 @@ class MessageBroker:
             type=msg_type,
             payload=json.dumps(payload, ensure_ascii=False),
             artifact_path=str(artifact_path),
+            task_id=task_id,
+            context_id=context_id,
         )
         self._store.save_message(msg)
+
+        # Task에 message 기록
+        if task:
+            task.add_message(msg.message_id)
+            self._store.save_task(task)
 
         # delivery 메시지 구성
         delivery = self._prompt.build_delivery(
@@ -139,6 +173,9 @@ class MessageBroker:
             recipient=recipient,
             msg_type=msg_type,
             payload=payload,
+            message_id=msg.message_id,
+            task_id=task_id,
+            context_id=context_id,
         )
 
         # inbox에 전달 (재시도 포함)
@@ -218,3 +255,68 @@ class MessageBroker:
 
         self._cmux.notify(title="cmux-agent", body=summary)
         self._cmux.log(summary, level="info", source="cmux-agent")
+
+    # -- Task 관리 ----------------------------------------------------------
+
+    def _resolve_task(
+        self,
+        sender: str,
+        recipient: str,
+        msg_type: MessageType,
+        payload: dict,
+    ) -> Task | None:
+        """dispatch → Task 생성(WORKING), result → 기존 Task 완료 + Artifact 생성."""
+        if msg_type == MessageType.DISPATCH:
+            context_id = payload.get("context_id") or str(uuid.uuid4())
+            task = Task(run_id=self._run_id, context_id=context_id)
+            task.transition_to(TaskState.WORKING)
+            # save는 _route_message에서 add_message 후 한 번만 수행
+            self._event_log.append(
+                task_created(self._run_id, task.task_id, task.context_id)
+            )
+            return task
+
+        if msg_type == MessageType.RESULT:
+            task_id = payload.get("task_id")
+
+            if not task_id:
+                logger.debug("result에 task_id 없음 (legacy): sender=%s", sender)
+                return None
+
+            task = self._store.get_task(task_id)
+
+            if task is None:
+                logger.warning(
+                    "result의 task_id가 DB에 없음: task_id=%s, sender=%s",
+                    task_id, sender,
+                )
+                return None
+
+            if task.state != TaskState.WORKING:
+                logger.warning(
+                    "result 수신했으나 task 상태가 WORKING이 아님: "
+                    "task_id=%s, state=%s, sender=%s",
+                    task_id, task.state.value, sender,
+                )
+                return task
+
+            old_state = task.state.value
+            task.transition_to(TaskState.COMPLETED)
+            self._store.save_task(task)
+            self._event_log.append(
+                task_state_changed(
+                    self._run_id, task.task_id, old_state, task.state.value
+                )
+            )
+            message_text = payload.get("message", "")
+            art = Artifact(
+                task_id=task.task_id,
+                parts=[Part(kind="text", text=message_text)],
+            )
+            self._store.save_artifact(art)
+            self._event_log.append(
+                artifact_created(self._run_id, task.task_id, art.artifact_id)
+            )
+            return task
+
+        return None

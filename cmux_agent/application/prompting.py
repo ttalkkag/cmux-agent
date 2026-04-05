@@ -41,14 +41,23 @@ class PromptBuilder:
         recipient: str,
         msg_type: MessageType,
         payload: dict,
+        message_id: str | None = None,
+        task_id: str | None = None,
+        context_id: str | None = None,
     ) -> dict:
         now = datetime.now(UTC).isoformat()
+        message_text = payload.get("message", "")
         return {
-            "message_id": None,
+            "message_id": message_id,
             "from": sender,
             "type": msg_type.value.lower(),
-            "message": payload.get("message", ""),
+            "message": message_text,
             "context": payload.get("context", {}),
+            "task_id": task_id,
+            "context_id": context_id,
+            "parts": [
+                {"kind": "text", "text": message_text, "media_type": "text/plain"},
+            ],
             "created_at": now,
         }
 

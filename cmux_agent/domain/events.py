@@ -58,3 +58,26 @@ def message_failed(
     return DomainEvent(
         "message.failed", run_id, {"message_id": message_id, "reason": reason}
     )
+
+
+# Task 이벤트
+def task_created(run_id: str, task_id: str, context_id: str) -> DomainEvent:
+    return DomainEvent(
+        "task.created", run_id, {"task_id": task_id, "context_id": context_id}
+    )
+
+
+def task_state_changed(
+    run_id: str, task_id: str, old: str, new: str,
+) -> DomainEvent:
+    return DomainEvent(
+        "task.state_changed", run_id, {"task_id": task_id, "old": old, "new": new}
+    )
+
+
+def artifact_created(
+    run_id: str, task_id: str, artifact_id: str,
+) -> DomainEvent:
+    return DomainEvent(
+        "artifact.created", run_id, {"task_id": task_id, "artifact_id": artifact_id}
+    )
