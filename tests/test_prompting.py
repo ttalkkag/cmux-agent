@@ -40,6 +40,47 @@ class TestPromptBuilder:
         assert result["from"] == "worker-1"
         assert result["message"] == "login API done"
 
+    def test_delivery_with_correlation(self):
+        result = self.builder.build_delivery(
+            sender="orchestrator",
+            recipient="worker-1",
+            msg_type=MessageType.DISPATCH,
+            payload={"message": "do stuff"},
+            message_id="msg-123",
+            task_id="task-456",
+            context_id="ctx-789",
+        )
+        assert result["message_id"] == "msg-123"
+        assert result["task_id"] == "task-456"
+        assert result["context_id"] == "ctx-789"
+        assert result["parts"] == [
+            {"kind": "text", "text": "do stuff", "media_type": "text/plain"},
+        ]
+        # legacy 필드도 유지
+        assert result["message"] == "do stuff"
+        assert result["context"] == {}
+
+    def test_delivery_preserves_context(self):
+        result = self.builder.build_delivery(
+            sender="orchestrator",
+            recipient="worker-1",
+            msg_type=MessageType.DISPATCH,
+            payload={"message": "x", "context": {"project": "foo"}},
+        )
+        assert result["context"] == {"project": "foo"}
+
+    def test_delivery_without_correlation(self):
+        result = self.builder.build_delivery(
+            sender="orchestrator",
+            recipient="worker-1",
+            msg_type=MessageType.DISPATCH,
+            payload={"message": "hello"},
+        )
+        assert result["message_id"] is None
+        assert result["task_id"] is None
+        assert result["context_id"] is None
+        assert len(result["parts"]) == 1
+
     def test_injection_prompt_dispatch(self):
         result = self.builder.build_injection_prompt(
             sender="orchestrator",

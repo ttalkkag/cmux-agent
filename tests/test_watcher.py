@@ -37,6 +37,47 @@ class TestValidateArtifact:
         }
         assert "알 수 없는 type" in validate_artifact(data)
 
+    def test_valid_extended_artifact(self):
+        data = {
+            "type": "dispatch",
+            "sender": "orchestrator",
+            "recipient": "worker-1",
+            "message": "do stuff",
+            "task_id": "task-123",
+            "context_id": "ctx-456",
+            "parts": [{"kind": "text", "text": "do stuff"}],
+        }
+        assert validate_artifact(data) is None
+
+    def test_extended_fields_optional(self):
+        data = {
+            "type": "result",
+            "sender": "worker-1",
+            "recipient": "orchestrator",
+            "message": "done",
+        }
+        assert validate_artifact(data) is None
+
+    def test_empty_parts_list(self):
+        data = {
+            "type": "dispatch",
+            "sender": "a",
+            "recipient": "b",
+            "message": "x",
+            "parts": [],
+        }
+        assert validate_artifact(data) is None
+
+    def test_invalid_parts_type(self):
+        data = {
+            "type": "dispatch",
+            "sender": "a",
+            "recipient": "b",
+            "message": "x",
+            "parts": "not a list",
+        }
+        assert "리스트" in validate_artifact(data)
+
 
 class TestArtifactWatcher:
     def test_process_existing(self, tmp_path):
