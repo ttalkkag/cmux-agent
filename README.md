@@ -20,7 +20,8 @@ uv tool install --editable .   # cmux-agent 명령어 등록
 
 ## 설정
 
-`.cmux/agent.json`을 생성하여 agent별 AI CLI를 지정한다.
+`cmux-agent init`으로 `.cmux/agents.json`과 기본 프롬프트 파일을 생성한다.
+설정 파일은 `.cmux/agents.json`이며, agent별 AI CLI를 지정한다.
 파일이 없으면 orchestrator + worker-1 (모두 claude)이 기본값이다.
 
 ```json
@@ -35,7 +36,7 @@ uv tool install --editable .   # cmux-agent 명령어 등록
 worker 수는 설정 파일의 `worker-N` 키 개수에 따라 동적으로 결정된다.
 
 프롬프트 템플릿은 `.cmux/prompts/`에서 관리한다.
-최초 `cmux-agent start` 시 기본 템플릿이 자동 생성되며, 직접 수정하여 커스터마이징할 수 있다.
+`cmux-agent init` 또는 `cmux-agent start` 시 기본 템플릿이 생성되며, 직접 수정하여 커스터마이징할 수 있다.
 
 ## 사용법
 
@@ -43,6 +44,12 @@ worker 수는 설정 파일의 `worker-N` 키 개수에 따라 동적으로 결�
 
 ```bash
 cmux-agent
+```
+
+초기 파일만 먼저 생성하려면:
+
+```bash
+cmux-agent init
 ```
 
 cmux workspace에 탭이 생성된다: controller, orchestrator, worker-1, ...
@@ -125,7 +132,7 @@ cmux-agent register <name> --role worker  # agent 추가 등록
 
 ```
 .cmux/
-├── agent.json              # 설정 파일 (agent별 AI CLI 지정)
+├── agents.json             # 설정 파일 (agent별 AI CLI 지정)
 ├── prompts/                # 프롬프트 템플릿 (커스터마이징 가능)
 │   ├── orchestrator.md     # orchestrator 프로토콜 템플릿
 │   ├── worker.md           # worker 프로토콜 템플릿
