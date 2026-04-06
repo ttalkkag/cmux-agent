@@ -26,6 +26,76 @@ DEFAULT_CONFIG = {
     "orchestrator": "claude",
     "worker-1": "claude",
 }
+DEFAULT_PROMPTS = {
+    "orchestrator.md": """# cmux-agent orchestrator 프로토콜
+
+당신은 orchestrator입니다.
+
+## 역할
+- 사용자의 요청을 분석하고 작업을 분해한다.
+- worker에게 작업을 위임한다.
+- 직접 파일을 수정하거나 명령을 실행하지 않는다.
+
+## 작업 위임 방법
+.cmux/outbox 디렉토리에 아래 형식의 JSON 파일을 생성한다.
+
+```json
+{
+  "type": "dispatch",
+  "sender": "orchestrator",
+  "recipient": "<worker-name>",
+  "message": "<구체적 작업 지시>"
+}
+```
+
+## 결과 수신
+worker의 결과는 이 터미널에 자동으로 전달된다.
+추가 작업이 필요하면 새로운 dispatch를 생성한다.
+모든 작업이 완료되면 사용자에게 최종 결과를 보고한다.
+""",
+    "worker.md": """# cmux-agent worker 프로토콜
+
+당신은 worker입니다.
+
+## 역할
+- orchestrator가 위임한 작업을 수행한다.
+- **작업 완료 후 반드시 결과를 보고한다.**
+
+## 작업 수행 방식
+- 복잡한 작업은 subagent(Agent tool)를 적극 활용하여 병렬로 처리한다.
+- 독립적인 하위 작업은 여러 subagent를 동시에 실행한다.
+- 직접 처리가 효율적인 간단한 작업은 subagent 없이 수행한다.
+
+## 작업 수신
+이 터미널에 작업 지시가 자동으로 전달된다.
+
+## 결과 보고 (필수)
+모든 작업이 끝나면 반드시 .cmux/outbox 디렉토리에 아래 형식의 JSON 파일을 생성한다.
+결과 보고 없이 작업을 종료하지 않는다.
+
+```json
+{
+  "type": "result",
+  "sender": "<worker-name>",
+  "recipient": "orchestrator",
+  "message": "<작업 결과 요약>"
+}
+```
+""",
+    "dispatch.md": """[cmux-agent] {sender}로부터 작업이 도착했습니다.
+
+당신의 이름: {recipient}
+
+작업: {message}
+
+작업 완료 후 .cmux/outbox 에 반드시 result JSON을 생성하세요.
+{{"type": "result", "sender": "{recipient}", "recipient": "{sender}", "message": "<작업 결과 요약>"}}
+""",
+    "result.md": """[cmux-agent] {sender}의 작업 결과입니다.
+
+결과: {message}
+""",
+}
 
 
 def _normalize_agent_entry(value: str | dict) -> dict:
@@ -65,6 +135,19 @@ def _get_event_log(fs: AgentFileSystem) -> EventLog:
     return EventLog(fs.event_log_path)
 
 
+def _write_default_templates(fs: AgentFileSystem) -> None:
+    config_path = fs.base / CONFIG_FILE
+    if not config_path.exists():
+        config_path.write_text(
+            json.dumps(DEFAULT_CONFIG, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    for name, content in DEFAULT_PROMPTS.items():
+        path = fs.prompts / name
+        if not path.exists():
+            path.write_text(content, encoding="utf-8")
+
+
 def _resolve_run_id(args: argparse.Namespace, store: StateStore) -> str:
     run_id = getattr(args, "run_id", None)
     if run_id:
@@ -74,6 +157,18 @@ def _resolve_run_id(args: argparse.Namespace, store: StateStore) -> str:
         print("활성 run이 없습니다. 'cmux-agent start'로 시작하세요.", file=sys.stderr)
         sys.exit(1)
     return run.run_id
+
+
+# ---------------------------------------------------------------------------
+# init
+# ---------------------------------------------------------------------------
+
+def cmd_init(args: argparse.Namespace) -> None:
+    cwd = getattr(args, "cwd", ".")
+    fs = _get_fs(cwd)
+    fs.init()
+    _write_default_templates(fs)
+    print(f"초기화 완료: {fs.base}")
 
 
 # ---------------------------------------------------------------------------
@@ -144,6 +239,7 @@ def cmd_start(args: argparse.Namespace) -> None:
     cwd = getattr(args, "cwd", ".")
     fs = _get_fs(cwd)
     fs.init()
+    _write_default_templates(fs)
     store = _get_store(fs)
     event_log = _get_event_log(fs)
     cmux = CmuxAdapter()

@@ -9,6 +9,7 @@ from cmux_agent.cli.commands import (
     cmd_agents,
     cmd_doctor,
     cmd_events,
+    cmd_init,
     cmd_messages,
     cmd_register,
     cmd_send,
@@ -29,6 +30,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
     # doctor
     sub.add_parser("doctor", help="시스템 진단")
+
+    # init
+    p_init = sub.add_parser("init", help="초기 설정 파일 생성")
+    p_init.add_argument("--cwd", default=".", help="작업 디렉토리")
 
     # start
     p_start = sub.add_parser("start", help="새 run 시작")
@@ -92,6 +97,7 @@ def main(argv: list[str] | None = None) -> None:
 
     commands = {
         "doctor": cmd_doctor,
+        "init": cmd_init,
         "start": cmd_start,
         "task": cmd_task,
         "stop": cmd_stop,
